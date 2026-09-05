@@ -113,7 +113,11 @@ export class Request {
   }
 
   private buildUrl(url: string, qs?: IgRequestOptions['qs']): string {
-    const absolute = url.startsWith('http') ? url : `${DEFAULT_BASE_URL}${url}`;
+    // Paths may arrive with or without a leading slash; join them onto the
+    // base without producing a double slash or a missing separator.
+    const absolute = url.startsWith('http')
+      ? url
+      : `${DEFAULT_BASE_URL.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
     if (!qs) {
       return absolute;
     }
