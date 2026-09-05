@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
 import Chance from 'chance';
-import { Cookie, CookieJar, MemoryCookieStore } from 'tough-cookie';
+import { Cookie, CookieJar, MemoryCookieStore, SerializedCookieJar } from 'tough-cookie';
 import devices from '../samples/devices.json';
 import builds from '../samples/builds.json';
 import supportedCapabilities from '../samples/supported-capabilities.json';
@@ -221,16 +221,12 @@ export class State {
     }
   }
 
-  public async deserializeCookieJar(cookies: string | CookieJar.Serialized) {
-    this.cookieJar = await new Promise<CookieJar>((resolve, reject) =>
-      CookieJar.deserialize(cookies, this.cookieStore, (err, jar) => (err ? reject(err) : resolve(jar))),
-    );
+  public async deserializeCookieJar(cookies: string | SerializedCookieJar) {
+    this.cookieJar = await CookieJar.deserialize(cookies, this.cookieStore);
   }
 
-  public async serializeCookieJar(): Promise<CookieJar.Serialized> {
-    return await new Promise<CookieJar.Serialized>((resolve, reject) =>
-      this.cookieJar.serialize((err, serialized) => (err ? reject(err) : resolve(serialized))),
-    );
+  public async serializeCookieJar(): Promise<SerializedCookieJar> {
+    return this.cookieJar.serialize();
   }
 
   public async serialize(): Promise<{ constants; cookies } & any> {

@@ -22,7 +22,7 @@ import { PostingLocation, PostingStoryOptions } from '../types/posting.options';
 import { IgConfigureVideoError, IgUploadVideoError } from '../errors';
 import { StatusResponse, UploadRepositoryVideoResponseRootObject } from '../responses';
 import { PostingIgtvOptions } from '../types/posting.igtv.options';
-import sizeOf = require('image-size');
+import { imageSize } from 'image-size';
 import Chance = require('chance');
 import { random, defaults } from 'lodash';
 import { UploadRepository } from '../repositories/upload.repository';
@@ -138,11 +138,11 @@ export class PublishService extends Repository {
     const uploadedPhoto = await this.client.upload.photo({
       file: options.file,
     });
-    const imageSize = await sizeOf(options.file);
+    const { width, height } = imageSize(options.file);
     const configureOptions: MediaConfigureTimelineOptions = {
       upload_id: uploadedPhoto.upload_id,
-      width: imageSize.width,
-      height: imageSize.height,
+      width,
+      height,
       caption: options.caption,
       ...PublishService.makeLocationOptions(options.location),
     };
@@ -226,7 +226,7 @@ export class PublishService extends Repository {
           uploadId: item.uploadId,
           isSidecar: true,
         });
-        const { width, height } = await sizeOf(item.file);
+        const { width, height } = imageSize(item.file);
         item.width = width;
         item.height = height;
         item.uploadId = uploadedPhoto.upload_id;
@@ -530,7 +530,7 @@ export class PublishService extends Repository {
     configureOptions: MediaConfigureStoryBaseOptions,
   ) {
     const uploadId = Date.now().toString();
-    const imageSize = await sizeOf(options.file);
+    const dimension = imageSize(options.file);
     await this.client.upload.photo({
       file: options.file,
       uploadId,
@@ -538,8 +538,8 @@ export class PublishService extends Repository {
     return await this.client.media.configureToStory({
       ...configureOptions,
       upload_id: uploadId,
-      width: imageSize.width,
-      height: imageSize.height,
+      width: dimension.width,
+      height: dimension.height,
     });
   }
 

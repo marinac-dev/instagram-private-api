@@ -39,7 +39,7 @@ const DEFAULT_BASE_URL = 'https://i.instagram.com/';
 
 export class Request {
   private static requestDebug = debug('ig:request');
-  end$ = new Subject();
+  end$ = new Subject<void>();
   error$ = new Subject<IgClientError>();
   attemptOptions: Partial<AttemptOptions<any>> = {
     maxAttempts: 1,

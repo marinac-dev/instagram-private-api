@@ -1,6 +1,5 @@
 import { plainToClass } from 'class-transformer';
 import { defaults } from 'lodash';
-import { Diff } from 'utility-types';
 import {
   AttachmentSticker,
   ChatSticker,
@@ -15,7 +14,7 @@ import {
   SliderSticker,
 } from './stickers';
 
-export type StickerOptions<T extends InstaSticker> = Diff<T, InstaSticker> & Partial<InstaSticker>;
+export type StickerOptions<T extends InstaSticker> = Omit<T, keyof InstaSticker> & Partial<InstaSticker>;
 
 export type StickerConfig = any & { story_sticker_ids: string };
 
