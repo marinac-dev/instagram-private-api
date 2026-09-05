@@ -8,9 +8,9 @@ import {
   DirectThreadBroadcastVoiceOptions,
 } from '../types';
 import { DirectThreadBroadcastOptions } from '../types';
-import { IgClientError, IgResponseError } from '../errors';
+import { IgClientError } from '../errors';
 import { PublishService } from '../services/publish.service';
-import * as Bluebird from 'bluebird';
+import { withIgResponseErrorHandler } from '../core/promise-helpers';
 
 export class DirectThreadEntity extends Entity {
   threadId: string = null;
@@ -138,13 +138,15 @@ export class DirectThreadEntity extends Entity {
       ...videoInfo,
     });
 
-    await Bluebird.try(() =>
-      this.client.media.uploadFinish({
-        upload_id: uploadId,
-        source_type: '2',
-        video: { length: videoInfo.duration / 1000.0 },
-      }),
-    ).catch(IgResponseError, PublishService.catchTranscodeError(videoInfo, options.transcodeDelay || 4 * 1000));
+    await withIgResponseErrorHandler(
+      () =>
+        this.client.media.uploadFinish({
+          upload_id: uploadId,
+          source_type: '2',
+          video: { length: videoInfo.duration / 1000.0 },
+        }),
+      PublishService.catchTranscodeError(videoInfo, options.transcodeDelay || 4 * 1000),
+    );
 
     return await this.broadcast({
       item: 'configure_video',
@@ -167,12 +169,14 @@ export class DirectThreadEntity extends Entity {
       mediaType: '11',
     });
 
-    await Bluebird.try(() =>
-      this.client.media.uploadFinish({
-        upload_id: uploadId,
-        source_type: '4',
-      }),
-    ).catch(IgResponseError, PublishService.catchTranscodeError({ duration }, options.transcodeDelay || 4 * 1000));
+    await withIgResponseErrorHandler(
+      () =>
+        this.client.media.uploadFinish({
+          upload_id: uploadId,
+          source_type: '4',
+        }),
+      PublishService.catchTranscodeError({ duration }, options.transcodeDelay || 4 * 1000),
+    );
 
     return await this.broadcast({
       item: 'share_voice',
@@ -195,7 +199,8 @@ export class DirectThreadEntity extends Entity {
   public async broadcastStory(
     input: Buffer | DirectThreadBroadcastPhotoStoryOptions | DirectThreadBroadcastVideoStoryOptions,
   ) {
-    const options = input instanceof Buffer ? { file: input } : input;
+    const options = (input instanceof Buffer ? { file: input } : input) as
+      DirectThreadBroadcastPhotoStoryOptions | DirectThreadBroadcastVideoStoryOptions;
     const baseOptions = {
       ...options,
       viewMode: options.viewMode || 'replayable',

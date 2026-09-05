@@ -66,7 +66,7 @@ export const SEGMENT_DIVIDERS = {
   sectionSize(sectionSize): SegmentDivider {
     return ({ buffer }) => {
       const sections = [];
-      for (let i = 0; i < buffer.byteLength; ) {
+      for (let i = 0; i < buffer.byteLength;) {
         const section = buffer.slice(i, Math.min(i + sectionSize, buffer.byteLength));
         sections.push(section);
         i += section.byteLength;

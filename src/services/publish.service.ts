@@ -19,16 +19,17 @@ import {
   UploadVideoOptions,
 } from '../types';
 import { PostingLocation, PostingStoryOptions } from '../types/posting.options';
-import { IgConfigureVideoError, IgResponseError, IgUploadVideoError } from '../errors';
+import { IgConfigureVideoError, IgUploadVideoError } from '../errors';
 import { StatusResponse, UploadRepositoryVideoResponseRootObject } from '../responses';
 import { PostingIgtvOptions } from '../types/posting.igtv.options';
 import sizeOf = require('image-size');
-import Bluebird = require('bluebird');
 import Chance = require('chance');
 import { random, defaults } from 'lodash';
 import { UploadRepository } from '../repositories/upload.repository';
 import debug from 'debug';
 import { StickerBuilder } from '../sticker-builder';
+import { withIgResponseErrorHandler } from '../core/promise-helpers';
+import { setTimeout as sleep } from 'timers/promises';
 
 export class PublishService extends Repository {
   private static publishDebug = debug('ig:publish');
@@ -40,12 +41,12 @@ export class PublishService extends Repository {
    * @param transcodeDelayInMs The delay for instagram to transcode the video
    */
   public static catchTranscodeError(videoInfo, transcodeDelayInMs: number) {
-    return error => {
+    return (error) => {
       if (error.response.statusCode === 202) {
         PublishService.publishDebug(
           `Received trancode error: ${JSON.stringify(error.response.body)}, waiting ${transcodeDelayInMs}ms`,
         );
-        return Bluebird.delay(transcodeDelayInMs);
+        return sleep(transcodeDelayInMs);
       } else {
         throw new IgUploadVideoError(error.response as IgResponse<UploadRepositoryVideoResponseRootObject>, videoInfo);
       }
@@ -155,27 +156,31 @@ export class PublishService extends Repository {
     const uploadId = Date.now().toString();
     const videoInfo = PublishService.getVideoInfo(options.video);
     PublishService.publishDebug(`Publishing video to timeline: ${JSON.stringify(videoInfo)}`);
-    await Bluebird.try(() =>
-      this.regularVideo({
-        video: options.video,
-        uploadId,
-        ...videoInfo,
-      }),
-    ).catch(IgResponseError, error => {
-      throw new IgUploadVideoError(error.response as IgResponse<UploadRepositoryVideoResponseRootObject>, videoInfo);
-    });
+    await withIgResponseErrorHandler(
+      () =>
+        this.regularVideo({
+          video: options.video,
+          uploadId,
+          ...videoInfo,
+        }),
+      (error) => {
+        throw new IgUploadVideoError(error.response as IgResponse<UploadRepositoryVideoResponseRootObject>, videoInfo);
+      },
+    );
     await this.client.upload.photo({
       file: options.coverImage,
       uploadId: uploadId.toString(),
     });
 
-    await Bluebird.try(() =>
-      this.client.media.uploadFinish({
-        upload_id: uploadId,
-        source_type: '4',
-        video: { length: videoInfo.duration / 1000.0 },
-      }),
-    ).catch(IgResponseError, PublishService.catchTranscodeError(videoInfo, options.transcodeDelay || 5000));
+    await withIgResponseErrorHandler(
+      () =>
+        this.client.media.uploadFinish({
+          upload_id: uploadId,
+          source_type: '4',
+          video: { length: videoInfo.duration / 1000.0 },
+        }),
+      PublishService.catchTranscodeError(videoInfo, options.transcodeDelay || 5000),
+    );
 
     const configureOptions: MediaConfigureTimelineVideoOptions = {
       upload_id: uploadId.toString(),
@@ -203,7 +208,7 @@ export class PublishService extends Repository {
         if (i >= 5 || e.response.statusCode >= 400) {
           throw new IgConfigureVideoError(e.response, configureOptions);
         }
-        await Bluebird.delay((i + 1) * 2 * 1000);
+        await sleep((i + 1) * 2 * 1000);
       }
     }
   }
@@ -229,37 +234,41 @@ export class PublishService extends Repository {
         item.videoInfo = PublishService.getVideoInfo(item.video);
         item.uploadId = Date.now().toString();
         PublishService.publishDebug(`Adding video to album: ${JSON.stringify(item.videoInfo)}`);
-        await Bluebird.try(() =>
-          this.regularVideo({
-            video: item.video,
-            uploadId: item.uploadId,
-            isSidecar: true,
-            ...item.videoInfo,
-          }),
-        ).catch(IgResponseError, error => {
-          throw new IgConfigureVideoError(
-            error.response as IgResponse<UploadRepositoryVideoResponseRootObject>,
-            item.videoInfo,
-          );
-        });
+        await withIgResponseErrorHandler(
+          () =>
+            this.regularVideo({
+              video: item.video,
+              uploadId: item.uploadId,
+              isSidecar: true,
+              ...item.videoInfo,
+            }),
+          (error) => {
+            throw new IgConfigureVideoError(
+              error.response as IgResponse<UploadRepositoryVideoResponseRootObject>,
+              item.videoInfo,
+            );
+          },
+        );
         await this.client.upload.photo({
           file: item.coverImage,
           uploadId: item.uploadId,
           isSidecar: true,
         });
-        await Bluebird.try(() =>
-          this.client.media.uploadFinish({
-            upload_id: item.uploadId,
-            source_type: '4',
-            video: { length: item.videoInfo.duration / 1000.0 },
-          }),
-        ).catch(IgResponseError, PublishService.catchTranscodeError(item.videoInfo, item.transcodeDelay));
+        await withIgResponseErrorHandler(
+          () =>
+            this.client.media.uploadFinish({
+              upload_id: item.uploadId,
+              source_type: '4',
+              video: { length: item.videoInfo.duration / 1000.0 },
+            }),
+          PublishService.catchTranscodeError(item.videoInfo, item.transcodeDelay),
+        );
       }
     }
 
     return await this.client.media.configureSidecar({
       caption: options.caption,
-      children_metadata: options.items.map(item => {
+      children_metadata: options.items.map((item) => {
         if (isVideo(item)) {
           return {
             upload_id: item.uploadId,
@@ -323,7 +332,7 @@ export class PublishService extends Repository {
       if (typeof options.caption === 'undefined') {
         options.caption = '';
       }
-      options.hashtags.forEach(hashtag => {
+      options.hashtags.forEach((hashtag) => {
         if (hashtag.tag_name.includes('#')) {
           hashtag.tag_name = hashtag.tag_name.replace('#', '');
         }
@@ -448,7 +457,7 @@ export class PublishService extends Repository {
         if (i >= 6) {
           throw new IgConfigureVideoError(e.response, finalInput);
         }
-        await Bluebird.delay((i + 1) * 2 * 1000);
+        await sleep((i + 1) * 2 * 1000);
       }
     }
   }
@@ -542,40 +551,52 @@ export class PublishService extends Repository {
     const videoInfo = PublishService.getVideoInfo(options.video);
     PublishService.publishDebug(`Publishing video to story: ${JSON.stringify(videoInfo)}`);
     const waterfallId = this.chance.guid({ version: 4 });
-    await Bluebird.try(() =>
-      this.regularVideo({
-        video: options.video,
-        uploadId,
-        forDirectStory: configureOptions.configure_mode === '2',
-        waterfallId,
-        forAlbum: true,
-        ...videoInfo,
-      }),
-    ).catch(IgResponseError, error => {
-      throw new IgConfigureVideoError(error.response as IgResponse<UploadRepositoryVideoResponseRootObject>, videoInfo);
-    });
+    await withIgResponseErrorHandler(
+      () =>
+        this.regularVideo({
+          video: options.video,
+          uploadId,
+          forDirectStory: configureOptions.configure_mode === '2',
+          waterfallId,
+          forAlbum: true,
+          ...videoInfo,
+        }),
+      (error) => {
+        throw new IgConfigureVideoError(
+          error.response as IgResponse<UploadRepositoryVideoResponseRootObject>,
+          videoInfo,
+        );
+      },
+    );
     await this.client.upload.photo({
       file: options.coverImage,
       waterfallId,
       uploadId,
     });
-    await Bluebird.try(() =>
-      this.client.media.uploadFinish({
-        upload_id: uploadId,
-        source_type: '3',
-        video: { length: videoInfo.duration / 1000.0 },
-      }),
-    ).catch(IgResponseError, PublishService.catchTranscodeError(videoInfo, options.transcodeDelay));
-    return Bluebird.try(() =>
-      this.client.media.configureToStoryVideo({
-        upload_id: uploadId,
-        length: videoInfo.duration / 1000.0,
-        width: videoInfo.width,
-        height: videoInfo.height,
-        ...configureOptions,
-      }),
-    ).catch(IgResponseError, error => {
-      throw new IgConfigureVideoError(error.response as IgResponse<UploadRepositoryVideoResponseRootObject>, videoInfo);
-    });
+    await withIgResponseErrorHandler(
+      () =>
+        this.client.media.uploadFinish({
+          upload_id: uploadId,
+          source_type: '3',
+          video: { length: videoInfo.duration / 1000.0 },
+        }),
+      PublishService.catchTranscodeError(videoInfo, options.transcodeDelay),
+    );
+    return withIgResponseErrorHandler(
+      () =>
+        this.client.media.configureToStoryVideo({
+          upload_id: uploadId,
+          length: videoInfo.duration / 1000.0,
+          width: videoInfo.width,
+          height: videoInfo.height,
+          ...configureOptions,
+        }),
+      (error) => {
+        throw new IgConfigureVideoError(
+          error.response as IgResponse<UploadRepositoryVideoResponseRootObject>,
+          videoInfo,
+        );
+      },
+    );
   }
 }

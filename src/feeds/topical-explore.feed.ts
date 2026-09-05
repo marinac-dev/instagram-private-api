@@ -1,11 +1,14 @@
 import { Feed } from '../core/feed';
 import { Expose } from 'class-transformer';
 import { IgAppModule } from '../types';
-import * as Chance from 'chance';
+import Chance from 'chance';
 import { TopicalExploreFeedResponseRootObject, TopicalExploreFeedResponseSectionalItemsItem } from '../responses';
 const chance = new Chance();
 
-export class TopicalExploreFeed extends Feed<TopicalExploreFeedResponseRootObject, TopicalExploreFeedResponseSectionalItemsItem> {
+export class TopicalExploreFeed extends Feed<
+  TopicalExploreFeedResponseRootObject,
+  TopicalExploreFeedResponseSectionalItemsItem
+> {
   module: IgAppModule = 'explore_popular';
   lat?: string | number;
   lng?: string | number;

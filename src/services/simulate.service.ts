@@ -1,6 +1,6 @@
 import { shuffle } from 'lodash';
 import { Repository } from '../core/repository';
-import Bluebird = require('bluebird');
+import { mapWithConcurrency } from '../core/promise-helpers';
 
 export class SimulateService extends Repository {
   private get preLoginFlowRequests(): Array<() => any> {
@@ -60,7 +60,7 @@ export class SimulateService extends Repository {
     if (toShuffle) {
       requests = shuffle(requests);
     }
-    await Bluebird.map(requests, request => request(), { concurrency });
+    await mapWithConcurrency(requests, (request) => request(), concurrency);
   }
 
   public async preLoginFlow(concurrency?: number, toShuffle?: boolean) {

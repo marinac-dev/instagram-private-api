@@ -1,11 +1,9 @@
 import * as _ from 'lodash';
-import * as Bluebird from 'bluebird';
-import * as Chance from 'chance';
-import { jar } from 'request';
+import Chance from 'chance';
 import { Cookie, CookieJar, MemoryCookieStore } from 'tough-cookie';
-import * as devices from '../samples/devices.json';
-import * as builds from '../samples/builds.json';
-import * as supportedCapabilities from '../samples/supported-capabilities.json';
+import devices from '../samples/devices.json';
+import builds from '../samples/builds.json';
+import supportedCapabilities from '../samples/supported-capabilities.json';
 import * as Constants from './constants';
 import { ChallengeStateResponse, CheckpointResponse } from '../responses';
 import { IgCookieNotFoundError, IgNoCheckpointError, IgUserIdNotFoundError } from '../errors';
@@ -102,7 +100,7 @@ export class State {
   @Enumerable(false)
   cookieStore = new MemoryCookieStore();
   @Enumerable(false)
-  cookieJar = jar(this.cookieStore);
+  cookieJar = new CookieJar(this.cookieStore, { looseMode: true });
   @Enumerable(false)
   checkpoint: CheckpointResponse | null = null;
   @Enumerable(false)
@@ -199,7 +197,7 @@ export class State {
   }
 
   public extractCookie(key: string): Cookie | null {
-    const cookies = this.cookieJar.getCookies(this.constants.HOST);
+    const cookies = this.cookieJar.getCookiesSync(this.constants.HOST);
     return _.find(cookies, { key }) || null;
   }
 
@@ -224,11 +222,15 @@ export class State {
   }
 
   public async deserializeCookieJar(cookies: string | CookieJar.Serialized) {
-    this.cookieJar['_jar'] = await Bluebird.fromCallback(cb => CookieJar.deserialize(cookies, this.cookieStore, cb));
+    this.cookieJar = await new Promise<CookieJar>((resolve, reject) =>
+      CookieJar.deserialize(cookies, this.cookieStore, (err, jar) => (err ? reject(err) : resolve(jar))),
+    );
   }
 
   public async serializeCookieJar(): Promise<CookieJar.Serialized> {
-    return Bluebird.fromCallback(cb => this.cookieJar['_jar'].serialize(cb));
+    return await new Promise<CookieJar.Serialized>((resolve, reject) =>
+      this.cookieJar.serialize((err, serialized) => (err ? reject(err) : resolve(serialized))),
+    );
   }
 
   public async serialize(): Promise<{ constants; cookies } & any> {

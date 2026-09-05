@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { classToPlain, Expose, plainToClassFromExist, serialize } from 'class-transformer';
 import { AttemptOptions, retry } from '@lifeomic/attempt';
-import * as Chance from 'chance';
+import Chance from 'chance';
 import { IgResponseError } from '../errors';
 import { Repository } from './repository';
 import { Enumerable } from '../decorators';
@@ -19,7 +19,7 @@ export abstract class Feed<Response = any, Item = any> extends Repository {
     return this.observable();
   }
   public observable(semaphore?: () => Promise<any>, attemptOptions?: Partial<AttemptOptions<any>>) {
-    return new Observable<Item[]>(observer => {
+    return new Observable<Item[]>((observer) => {
       let subscribed = true;
       process.nextTick(async () => {
         do {

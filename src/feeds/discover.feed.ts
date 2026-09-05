@@ -30,7 +30,7 @@ export class DiscoverFeed extends Feed<DiscoverFeedResponseRootObject, DiscoverF
 
   async items() {
     const body = await this.request();
-    return body.suggested_users.suggestions.map(user =>
+    return body.suggested_users.suggestions.map((user) =>
       plainToClassFromExist(new DiscoverFeedResponseUser(this.client), user),
     );
   }

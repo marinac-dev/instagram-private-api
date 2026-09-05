@@ -28,7 +28,7 @@ export class PendingFriendshipsFeed extends Feed<
 
   async items() {
     const body = await this.request();
-    return body.users.map(user =>
+    return body.users.map((user) =>
       plainToClassFromExist(new PendingFriendshipsFeedResponseUsersItem(this.client), user),
     );
   }

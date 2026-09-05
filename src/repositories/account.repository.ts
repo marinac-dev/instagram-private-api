@@ -7,16 +7,11 @@ import {
   SpamResponse,
   StatusResponse,
 } from '../responses';
-import {
-  IgLoginBadPasswordError,
-  IgLoginInvalidUserError,
-  IgLoginTwoFactorRequiredError,
-  IgResponseError,
-} from '../errors';
+import { IgLoginBadPasswordError, IgLoginInvalidUserError, IgLoginTwoFactorRequiredError } from '../errors';
 import { IgResponse, AccountEditProfileOptions, AccountTwoFactorLoginOptions } from '../types';
 import { defaultsDeep } from 'lodash';
 import { IgSignupBlockError } from '../errors/ig-signup-block.error';
-import Bluebird = require('bluebird');
+import { withIgResponseErrorHandler } from '../core/promise-helpers';
 import debug from 'debug';
 import * as crypto from 'crypto';
 
@@ -26,44 +21,46 @@ export class AccountRepository extends Repository {
     if (!this.client.state.passwordEncryptionPubKey) {
       await this.client.qe.syncLoginExperiments();
     }
-    const {encrypted, time} = this.encryptPassword(password);
-    const response = await Bluebird.try(() =>
-      this.client.request.send<AccountRepositoryLoginResponseRootObject>({
-        method: 'POST',
-        url: '/api/v1/accounts/login/',
-        form: this.client.request.sign({
-          username,
-          enc_password: `#PWD_INSTAGRAM:4:${time}:${encrypted}`,
-          guid: this.client.state.uuid,
-          phone_id: this.client.state.phoneId,
-          _csrftoken: this.client.state.cookieCsrfToken,
-          device_id: this.client.state.deviceId,
-          adid: this.client.state.adid,
-          google_tokens: '[]',
-          login_attempt_count: 0,
-          country_codes: JSON.stringify([{ country_code: '1', source: 'default' }]),
-          jazoest: AccountRepository.createJazoest(this.client.state.phoneId),
+    const { encrypted, time } = this.encryptPassword(password);
+    const response = await withIgResponseErrorHandler(
+      () =>
+        this.client.request.send<AccountRepositoryLoginResponseRootObject>({
+          method: 'POST',
+          url: '/api/v1/accounts/login/',
+          form: this.client.request.sign({
+            username,
+            enc_password: `#PWD_INSTAGRAM:4:${time}:${encrypted}`,
+            guid: this.client.state.uuid,
+            phone_id: this.client.state.phoneId,
+            _csrftoken: this.client.state.cookieCsrfToken,
+            device_id: this.client.state.deviceId,
+            adid: this.client.state.adid,
+            google_tokens: '[]',
+            login_attempt_count: 0,
+            country_codes: JSON.stringify([{ country_code: '1', source: 'default' }]),
+            jazoest: AccountRepository.createJazoest(this.client.state.phoneId),
+          }),
         }),
-      }),
-    ).catch(IgResponseError, error => {
-      if (error.response.body.two_factor_required) {
-        AccountRepository.accountDebug(
-          `Login failed, two factor auth required: ${JSON.stringify(error.response.body.two_factor_info)}`,
-        );
-        throw new IgLoginTwoFactorRequiredError(error.response as IgResponse<AccountRepositoryLoginErrorResponse>);
-      }
-      switch (error.response.body.error_type) {
-        case 'bad_password': {
-          throw new IgLoginBadPasswordError(error.response as IgResponse<AccountRepositoryLoginErrorResponse>);
+      (error) => {
+        if (error.response.body.two_factor_required) {
+          AccountRepository.accountDebug(
+            `Login failed, two factor auth required: ${JSON.stringify(error.response.body.two_factor_info)}`,
+          );
+          throw new IgLoginTwoFactorRequiredError(error.response as IgResponse<AccountRepositoryLoginErrorResponse>);
         }
-        case 'invalid_user': {
-          throw new IgLoginInvalidUserError(error.response as IgResponse<AccountRepositoryLoginErrorResponse>);
+        switch (error.response.body.error_type) {
+          case 'bad_password': {
+            throw new IgLoginBadPasswordError(error.response as IgResponse<AccountRepositoryLoginErrorResponse>);
+          }
+          case 'invalid_user': {
+            throw new IgLoginInvalidUserError(error.response as IgResponse<AccountRepositoryLoginErrorResponse>);
+          }
+          default: {
+            throw error;
+          }
         }
-        default: {
-          throw error;
-        }
-      }
-    });
+      },
+    );
     return response.body.logged_in_user;
   }
 
@@ -76,14 +73,16 @@ export class AccountRepository extends Repository {
     return `2${sum}`;
   }
 
-  public encryptPassword(password: string): { time: string, encrypted: string } {
+  public encryptPassword(password: string): { time: string; encrypted: string } {
     const randKey = crypto.randomBytes(32);
     const iv = crypto.randomBytes(12);
-    const rsaEncrypted = crypto.publicEncrypt({
-      key: Buffer.from(this.client.state.passwordEncryptionPubKey, 'base64').toString(),
-      // @ts-ignore
-      padding: crypto.constants.RSA_PKCS1_PADDING,
-    }, randKey);
+    const rsaEncrypted = crypto.publicEncrypt(
+      {
+        key: Buffer.from(this.client.state.passwordEncryptionPubKey, 'base64').toString(),
+        padding: crypto.constants.RSA_PKCS1_PADDING,
+      },
+      randKey,
+    );
     const cipher = crypto.createCipheriv('aes-256-gcm', randKey, iv);
     const time = Math.floor(Date.now() / 1000).toString();
     cipher.setAAD(Buffer.from(time));
@@ -94,11 +93,13 @@ export class AccountRepository extends Repository {
     return {
       time,
       encrypted: Buffer.concat([
-        Buffer.from([1, this.client.state.passwordEncryptionKeyId]),
+        Buffer.from([1, Number(this.client.state.passwordEncryptionKeyId)]),
         iv,
         sizeBuffer,
-        rsaEncrypted, authTag, aesEncrypted])
-        .toString('base64'),
+        rsaEncrypted,
+        authTag,
+        aesEncrypted,
+      ]).toString('base64'),
     };
   }
 
@@ -142,36 +143,38 @@ export class AccountRepository extends Repository {
   }
 
   async create({ username, password, email, first_name }) {
-    const { body } = await Bluebird.try(() =>
-      this.client.request.send({
-        method: 'POST',
-        url: '/api/v1/accounts/create/',
-        form: this.client.request.sign({
-          username,
-          password,
-          email,
-          first_name,
-          guid: this.client.state.uuid,
-          device_id: this.client.state.deviceId,
-          _csrftoken: this.client.state.cookieCsrfToken,
-          force_sign_up_code: '',
-          qs_stamp: '',
-          waterfall_id: this.client.state.uuid,
-          sn_nonce: '',
-          sn_result: '',
+    const { body } = await withIgResponseErrorHandler(
+      () =>
+        this.client.request.send({
+          method: 'POST',
+          url: '/api/v1/accounts/create/',
+          form: this.client.request.sign({
+            username,
+            password,
+            email,
+            first_name,
+            guid: this.client.state.uuid,
+            device_id: this.client.state.deviceId,
+            _csrftoken: this.client.state.cookieCsrfToken,
+            force_sign_up_code: '',
+            qs_stamp: '',
+            waterfall_id: this.client.state.uuid,
+            sn_nonce: '',
+            sn_result: '',
+          }),
         }),
-      }),
-    ).catch(IgResponseError, error => {
-      switch (error.response.body.error_type) {
-        case 'signup_block': {
-          AccountRepository.accountDebug('Signup failed');
-          throw new IgSignupBlockError(error.response as IgResponse<SpamResponse>);
+      (error) => {
+        switch (error.response.body.error_type) {
+          case 'signup_block': {
+            AccountRepository.accountDebug('Signup failed');
+            throw new IgSignupBlockError(error.response as IgResponse<SpamResponse>);
+          }
+          default: {
+            throw error;
+          }
         }
-        default: {
-          throw error;
-        }
-      }
-    });
+      },
+    );
     return body;
   }
 

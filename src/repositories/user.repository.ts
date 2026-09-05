@@ -8,7 +8,7 @@ import {
 import { IgExactUserNotFoundError } from '../errors';
 import { UserLookupOptions } from '../types/user.lookup.options';
 import { defaults } from 'lodash';
-import * as Chance from 'chance';
+import Chance from 'chance';
 
 export class UserRepository extends Repository {
   async info(id: string | number): Promise<UserRepositoryInfoResponseUser> {
@@ -51,7 +51,7 @@ export class UserRepository extends Repository {
     username = username.toLowerCase();
     const result = await this.search(username);
     const users = result.users;
-    const account = users.find(user => user.username === username);
+    const account = users.find((user) => user.username === username);
     if (!account) {
       throw new IgExactUserNotFoundError();
     }

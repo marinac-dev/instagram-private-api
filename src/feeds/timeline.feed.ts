@@ -65,6 +65,6 @@ export class TimelineFeed extends Feed<TimelineFeedResponse, TimelineFeedRespons
 
   async items() {
     const response = await this.request();
-    return response.feed_items.filter(i => i.media_or_ad).map(i => i.media_or_ad);
+    return response.feed_items.filter((i) => i.media_or_ad).map((i) => i.media_or_ad);
   }
 }

@@ -16,7 +16,7 @@ export class PollSticker extends InstaSticker {
   }
 
   set tallies(value: Tallies) {
-    this._tallies = value.map(t => ({ fontSize: 28.0, ...t })) as Tallies;
+    this._tallies = value.map((t) => ({ fontSize: 28.0, ...t })) as Tallies;
   }
 
   question: string;

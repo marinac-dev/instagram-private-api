@@ -10,7 +10,7 @@ export class QuizSticker extends InstaSticker {
   set options(value: string[] | Options) {
     let options: Options;
     if (((x): x is string[] => typeof x[0] === 'string')(value)) {
-      options = value.map(o => ({ text: o, count: 0 }));
+      options = value.map((o) => ({ text: o, count: 0 }));
     } else {
       options = value;
     }

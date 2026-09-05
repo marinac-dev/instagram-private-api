@@ -41,10 +41,10 @@ export class TagsFeed extends Feed<TagsFeedResponse, TagsFeedResponseMedia> {
   public async items() {
     const response = await this.request();
     return flatten(
-      response.sections.map(section => {
+      response.sections.map((section) => {
         if (section.layout_type !== 'media_grid') return;
 
-        return section.layout_content.medias.map(medias => medias.media);
+        return section.layout_content.medias.map((medias) => medias.media);
       }),
     );
   }

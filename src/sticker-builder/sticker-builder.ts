@@ -41,7 +41,7 @@ export class StickerBuilder {
     const additionalProperties: any[] = [];
     for (const stickers of map.values()) {
       Object.defineProperty(result, stickers[0].key, { value: JSON.stringify(stickers), enumerable: true });
-      stickers.forEach(sticker => additionalProperties.push(sticker.additionalConfigureProperties));
+      stickers.forEach((sticker) => additionalProperties.push(sticker.additionalConfigureProperties));
       ids.push(stickers[0].id);
     }
     return {

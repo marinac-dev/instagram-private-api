@@ -7,7 +7,7 @@ export class SearchService extends Repository {
   }
   public async blendedItems(query: string) {
     const list = await this.blended(query);
-    return list.map(item => item.user || item.hashtag || item.place);
+    return list.map((item) => item.user || item.hashtag || item.place);
   }
   public async users(query: string) {
     const result = await this.client.user.search(query);

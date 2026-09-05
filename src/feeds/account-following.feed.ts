@@ -37,6 +37,8 @@ export class AccountFollowingFeed extends Feed<AccountFollowingFeedResponse, Acc
 
   async items() {
     const body = await this.request();
-    return body.users.map(user => plainToClassFromExist(new AccountFollowingFeedResponseUsersItem(this.client), user));
+    return body.users.map((user) =>
+      plainToClassFromExist(new AccountFollowingFeedResponseUsersItem(this.client), user),
+    );
   }
 }

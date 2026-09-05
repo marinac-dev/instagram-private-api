@@ -1,5 +1,3 @@
-import { Response } from 'request';
-
 export type IgAppModule =
   | 'feed_timeline' //  "Timeline" tab
   | 'newsfeed' // "Followings Activity" feed tab
@@ -32,4 +30,18 @@ export type IgAppModule =
   | 'igtv_feed_timeline'
   | string;
 
-export type IgResponse<Body> = Pick<Response, Exclude<keyof Response, 'body'>> & { body: Body };
+/**
+ * The response shape produced by {@link Request.send} and consumed by the
+ * typed error classes (`statusCode`, `headers`, `body` and a minimal
+ * `request` descriptor for error messages).
+ */
+export interface IgResponse<Body = any> {
+  statusCode: number;
+  statusMessage: string;
+  headers: { [name: string]: any };
+  body: Body;
+  request: {
+    method: string;
+    uri: { path: string };
+  };
+}

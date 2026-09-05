@@ -40,6 +40,6 @@ export class LocationFeed extends Feed<LocationFeedResponse, LocationFeedRespons
 
   public async items() {
     const response = await this.request();
-    return flatten(response.sections.map(section => section.layout_content.medias.map(medias => medias.media)));
+    return flatten(response.sections.map((section) => section.layout_content.medias.map((medias) => medias.media)));
   }
 }

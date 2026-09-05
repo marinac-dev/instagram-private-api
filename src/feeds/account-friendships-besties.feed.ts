@@ -25,6 +25,6 @@ export class BestiesFeed extends Feed<BestiesFeedResponse, BestiesFeedResponseUs
 
   async items() {
     const body = await this.request();
-    return body.users.map(user => plainToClassFromExist(new BestiesFeedResponseUsersItem(this.client), user));
+    return body.users.map((user) => plainToClassFromExist(new BestiesFeedResponseUsersItem(this.client), user));
   }
 }

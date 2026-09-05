@@ -25,6 +25,6 @@ export class SavedFeed extends Feed<SavedFeedResponseRootObject, SavedFeedRespon
 
   async items(): Promise<SavedFeedResponseMedia[]> {
     const { items } = await this.request();
-    return items.map(i => i.media);
+    return items.map((i) => i.media);
   }
 }

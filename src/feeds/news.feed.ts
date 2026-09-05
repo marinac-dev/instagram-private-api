@@ -24,6 +24,6 @@ export class NewsFeed extends Feed<NewsFeedResponseRootObject, NewsFeedResponseS
 
   async items() {
     const body = await this.request();
-    return body.stories.map(user => plainToClassFromExist(new NewsFeedResponseStoriesItem(this.client), user));
+    return body.stories.map((user) => plainToClassFromExist(new NewsFeedResponseStoriesItem(this.client), user));
   }
 }

@@ -27,7 +27,7 @@ export class BlockedUsersFeed extends Feed<
 
   async items() {
     const body = await this.request();
-    return body.blocked_list.map(user =>
+    return body.blocked_list.map((user) =>
       plainToClassFromExist(new BlockedUsersFeedResponseBlockedListItem(this.client), user),
     );
   }

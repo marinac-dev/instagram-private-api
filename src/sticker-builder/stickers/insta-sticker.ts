@@ -1,4 +1,4 @@
-import * as snakeCaseKeys from 'snakecase-keys';
+import snakeCaseKeys from 'snakecase-keys';
 import { classToPlain } from 'class-transformer';
 
 export abstract class InstaSticker {
@@ -69,7 +69,6 @@ export abstract class InstaSticker {
   }
 
   public toJSON() {
-    // @ts-ignore
     return snakeCaseKeys(classToPlain(this), { deep: true });
   }
 }

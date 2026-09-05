@@ -7,7 +7,7 @@ export class AccountFollowersFeed extends Feed<AccountFollowersFeedResponse, Acc
   /**
    * only 'default' seems to work
    */
-  order?: 'default' = 'default';
+  order: 'default' = 'default' as const;
   query = '';
   enableGroups = true;
 
@@ -37,6 +37,8 @@ export class AccountFollowersFeed extends Feed<AccountFollowersFeedResponse, Acc
 
   async items() {
     const body = await this.request();
-    return body.users.map(user => plainToClassFromExist(new AccountFollowersFeedResponseUsersItem(this.client), user));
+    return body.users.map((user) =>
+      plainToClassFromExist(new AccountFollowersFeedResponseUsersItem(this.client), user),
+    );
   }
 }

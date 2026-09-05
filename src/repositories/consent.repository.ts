@@ -1,6 +1,5 @@
 import { Repository } from '../core/repository';
 import Chance = require('chance');
-import Bluebird = require('bluebird');
 
 export class ConsentRepository extends Repository {
   public async auto() {
@@ -9,9 +8,9 @@ export class ConsentRepository extends Repository {
       return response;
     }
     const dob = new Chance().birthday();
-    await Bluebird.try(() => this.existingUserFlowIntro()).catch(() => {});
-    await Bluebird.try(() => this.existingUserFlowTosAndTwoAgeButton()).catch(() => {});
-    await Bluebird.try(() => this.existingUserFlowDob(dob.getFullYear(), dob.getMonth(), dob.getDay())).catch(() => {});
+    await this.existingUserFlowIntro().catch(() => {});
+    await this.existingUserFlowTosAndTwoAgeButton().catch(() => {});
+    await this.existingUserFlowDob(dob.getFullYear(), dob.getMonth(), dob.getDay()).catch(() => {});
     return true;
   }
 
