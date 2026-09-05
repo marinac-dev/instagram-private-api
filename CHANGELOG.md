@@ -1,5 +1,58 @@
 # Changelog
 
+## 3.0.0
+
+Maintenance release: Node floor raised, the dependency set brought current, and
+hard-coded values made overridable.
+
+### Breaking changes
+
+- **Node.js >= 24.18.0 is required** (was >= 20). CI now tests Node 24 only.
+- Removed the dead `PostingIgtvOptions.transcodeDelay` / `maxTranscodeTries`
+  knobs (they documented a `resolveTranscode` implementation that has been
+  commented out for years).
+- `QpRepository.surfacesToQueries` / `surfacesToTriggers` are getters over
+  `state.constants` now; assign overrides through `state.constants` instead of
+  writing the fields.
+
+### Behavior fixes
+
+- Direct-thread video/voice transcode wait unified to the shared
+  5000 ms default (was 4000 ms); restore per-instance via
+  `state.constants.TRANSCODE_DELAY_MS`.
+- Album and story-video publishes now actually wait on a `202 Transcode
+  pending` response (previously the missing fallback waited ~0 ms).
+- The IGTV `configureToIgtv` retry loop now throws `IgConfigureVideoError` when
+  retries are exhausted (previously the dead `i >= 6` bounds check made it
+  return `undefined`).
+
+### Configuration
+
+- `Constants` module is exported from the package root; every new constant is
+  overridable per instance via `ig.state.constants` (survives
+  `serialize()`/`deserialize()`): `TRANSCODE_DELAY_MS`,
+  `CONFIGURE_MAX_ATTEMPTS`, `CONFIGURE_RETRY_BASE_DELAY_MS`,
+  `SEGMENTED_VIDEO_CHUNK_SIZE`, `UPLOAD_PHOTO_QUALITY`,
+  `WEB_USER_AGENT_CHROME_VERSION`, `INSIGHTS_DOCUMENT_IDS` (six GraphQL
+  document IDs moved out of insights service/feeds), `QP_SURFACES_TO_QUERIES`
+  / `QP_SURFACES_TO_TRIGGERS`, `LAUNCHER_PRELOGIN_CONFIGS`
+  / `LAUNCHER_POSTLOGIN_CONFIGS`.
+- `state.devices` / `state.builds` are public per-instance pools used by
+  `generateDevice()` (previously the fixed `src/samples/*.json` lookups).
+- New docs: `AGENTS.md` (integration guide for AI agents) and `MIGRATION.md`
+  (1.46.1 → 2.0.0 → 3.0.0); README gained a Configuration section.
+
+### Dependencies
+
+- snakecase-keys 3 → 4 (last CommonJS major; 5+ is pure ESM and breaks the
+  CommonJS build), tough-cookie 5 → 6, url-regex-safe 3 → 4,
+  ts-custom-error 2 → 3
+- `@types/node` tracks Node 24
+- Dev tooling: ESLint 9 → 10, Vitest 3 → 5, dotenv 6 → 17, inquirer 1 → 14,
+  lint-staged 16 → 17; in-range refreshes for axios, lodash, chance,
+  @lifeomic/attempt and others
+- `typescript` stays on 5.9 (typedoc 0.28 does not support newer majors)
+
 ## 2.0.0
 
 Breaking modernization release. Thanks to the botched HTTP stack of 2020 being

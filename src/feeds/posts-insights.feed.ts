@@ -17,7 +17,7 @@ export class PostsInsightsFeed extends Feed<PostsInsightsFeedResponseRootObject,
   async request(): Promise<PostsInsightsFeedResponseRootObject> {
     const body = await this.client.ads.graphQL<PostsInsightsFeedResponseRootObject>({
       surface: { friendlyName: 'IgInsightsPostGridSurfaceQuery' },
-      documentId: '1981884911894608',
+      documentId: this.client.state.constants.INSIGHTS_DOCUMENT_IDS.postsGrid,
       variables: {
         count: 15,
         cursor: this.nextCursor,

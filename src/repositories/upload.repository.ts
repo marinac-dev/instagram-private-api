@@ -27,7 +27,7 @@ export class UploadRepository extends Repository {
         X_FB_PHOTO_WATERFALL_ID: options.waterfallId || this.chance.guid(),
         'X-Entity-Type': 'image/jpeg',
         Offset: 0,
-        'X-Instagram-Rupload-Params': JSON.stringify(UploadRepository.createPhotoRuploadParams(options, uploadId)),
+        'X-Instagram-Rupload-Params': JSON.stringify(this.createPhotoRuploadParams(options, uploadId)),
         'X-Entity-Name': name,
         'X-Entity-Length': contentLength,
         'Content-Type': 'application/octet-stream',
@@ -197,13 +197,17 @@ export class UploadRepository extends Repository {
     };
   }
 
-  private static createPhotoRuploadParams(options: UploadPhotoOptions, uploadId: number | string) {
+  private createPhotoRuploadParams(options: UploadPhotoOptions, uploadId: number | string) {
     const ruploadParams: any = {
       retry_context: JSON.stringify({ num_step_auto_retry: 0, num_reupload: 0, num_step_manual_retry: 0 }),
       media_type: '1',
       upload_id: uploadId.toString(),
       xsharing_user_ids: JSON.stringify([]),
-      image_compression: JSON.stringify({ lib_name: 'moz', lib_version: '3.1.m', quality: '80' }),
+      image_compression: JSON.stringify({
+        lib_name: 'moz',
+        lib_version: '3.1.m',
+        quality: this.client.state.constants.UPLOAD_PHOTO_QUALITY,
+      }),
     };
     if (options.isSidecar) {
       ruploadParams.is_sidecar = '1';

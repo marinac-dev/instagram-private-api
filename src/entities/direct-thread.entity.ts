@@ -145,7 +145,10 @@ export class DirectThreadEntity extends Entity {
           source_type: '2',
           video: { length: videoInfo.duration / 1000.0 },
         }),
-      PublishService.catchTranscodeError(videoInfo, options.transcodeDelay || 4 * 1000),
+      PublishService.catchTranscodeError(
+        videoInfo,
+        options.transcodeDelay || this.client.state.constants.TRANSCODE_DELAY_MS,
+      ),
     );
 
     return await this.broadcast({
@@ -175,7 +178,10 @@ export class DirectThreadEntity extends Entity {
           upload_id: uploadId,
           source_type: '4',
         }),
-      PublishService.catchTranscodeError({ duration }, options.transcodeDelay || 4 * 1000),
+      PublishService.catchTranscodeError(
+        { duration },
+        options.transcodeDelay || this.client.state.constants.TRANSCODE_DELAY_MS,
+      ),
     );
 
     return await this.broadcast({

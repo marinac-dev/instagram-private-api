@@ -41,6 +41,11 @@ Contact me in [telegram](https://t.me/bowzee) or [email](mailto:dilame.bowzee@gm
   - [Feeds](#feeds)
   - [Repositories](#repositories)
   - [Services](#services)
+- [Configuration](#configuration)
+  - [Constants](#constants)
+  - [Device Fingerprint](#device-fingerprint)
+  - [Publishing Defaults](#publishing-defaults)
+- [Migration & Integration Guides](#migration--integration-guides)
 - [Contribution](#contribution)
 - [Useful Links](#useful-links)
   - [Special Thanks](#special-thanks)
@@ -49,7 +54,7 @@ Contact me in [telegram](https://t.me/bowzee) or [email](mailto:dilame.bowzee@gm
 
 # Install
 
-Requires Node.js >= 20.
+Requires Node.js >= 24.18.0.
 
 From npm
 
@@ -166,6 +171,53 @@ Services will help you to maintain some actions without calling a couple reposit
 
 - See the list of **available repositories** [here](docs/modules/services.md).
 - See the list of **their keys** in [`IgApiClient` here](docs/classes/index/IgApiClient.md).
+
+# Configuration
+
+The client has no constructor options; everything is configured by setting fields on `ig.state` after construction.
+Defaults live in [`src/core/constants.ts`](src/core/constants.ts) and most of them are overridable per client instance.
+
+## Constants
+
+`ig.state.constants` holds the defaults from the constants module.
+Replace it (wholesale, spread-style) to override any value — protocol identifiers, app version, publishing defaults, and everything else exported there:
+
+```typescript
+import { Constants } from 'instagram-private-api';
+
+// Instagram periodically rotates the GraphQL documentIds used by insights;
+// swap them without waiting for a library release:
+ig.state.constants = {
+  ...Constants,
+  INSIGHTS_DOCUMENT_IDS: { ...Constants.INSIGHTS_DOCUMENT_IDS, account: '<new-document-id>' },
+};
+```
+
+Overridden constants are included in `state.serialize()` output, so they survive session persistence.
+Notable rot-prone or environment-specific values: `INSIGHTS_DOCUMENT_IDS`, `QP_SURFACES_TO_QUERIES`/`QP_SURFACES_TO_TRIGGERS`, `LAUNCHER_PRELOGIN_CONFIGS`/`LAUNCHER_POSTLOGIN_CONFIGS`, `APP_VERSION`/`APP_VERSION_CODE`, `BLOKS_VERSION_ID`, `EXPERIMENTS`/`LOGIN_EXPERIMENTS`.
+
+## Device Fingerprint
+
+Device identity and locale fields are plain mutable fields on `ig.state`:
+
+- `ig.state.generateDevice(seed)` derives `deviceString`, `deviceId`, `uuid`, `phoneId`, `adid` and `build` from the seed.
+- `ig.state.devices` / `ig.state.builds` — the pools `generateDevice` picks from; narrow them to control which devices you emulate.
+- `ig.state.language` (default `en_US`), `ig.state.timezoneOffset`, `ig.state.radioType`, `ig.state.capabilitiesHeader`, `ig.state.connectionTypeHeader`.
+- The web user agent embeds `ig.state.constants.WEB_USER_AGENT_CHROME_VERSION` (default `70.0.3538.110`) — override it via the constants mechanism above.
+
+## Publishing Defaults
+
+Video/photo publishing knobs (also in the constants module, so overridable the same way):
+
+- `TRANSCODE_DELAY_MS` (default `5000`) — wait after a `202 Transcode pending` response. Per-call `transcodeDelay` options take precedence.
+- `CONFIGURE_MAX_ATTEMPTS` (default `6`) and `CONFIGURE_RETRY_BASE_DELAY_MS` (default `2000`) — the configure retry loop for timeline videos and IGTV.
+- `SEGMENTED_VIDEO_CHUNK_SIZE` (default `2 ** 24` bytes) — IGTV segmented upload chunk size. A per-call `segmentDivider` option takes precedence.
+- `UPLOAD_PHOTO_QUALITY` (default `'80'`) — JPEG quality sent in the photo upload `image_compression` params.
+
+# Migration & Integration Guides
+
+- Upgrading from the original **1.46.1** line? Follow [MIGRATION.md](MIGRATION.md) (1.46.1 → 2.0.0 → 3.0.0).
+- Building an **AI-agent-driven workflow** with this library? Read [AGENTS.md](AGENTS.md) — session lifecycle, security rules, error handling and pacing patterns for safe, reliable integrations.
 
 # Debugging
 

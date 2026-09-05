@@ -10,7 +10,7 @@ export class InsightsService extends Repository {
         name: 'account',
         friendlyName: 'IgInsightsAccountInsightsWithTabsQuery',
       },
-      documentId: '2552829571413315',
+      documentId: this.client.state.constants.INSIGHTS_DOCUMENT_IDS.account,
       variables: {
         IgInsightsGridMediaImage_SIZE: options.gridMediaSize || 256,
         activityTab: options.activityTab || true,
@@ -30,7 +30,7 @@ export class InsightsService extends Repository {
         name: 'post',
         friendlyName: 'IgInsightsPostInsightsQuery',
       },
-      documentId: '2009845309144121',
+      documentId: this.client.state.constants.INSIGHTS_DOCUMENT_IDS.post,
       variables: {
         query_params: {
           access_token: '',
@@ -46,7 +46,7 @@ export class InsightsService extends Repository {
         name: 'igtv',
         friendlyName: 'IgInsightsIGTVInsightsAppQuery',
       },
-      documentId: '1744089735627228',
+      documentId: this.client.state.constants.INSIGHTS_DOCUMENT_IDS.igtv,
       variables: {
         query_params: {
           access_token: '',
@@ -62,7 +62,7 @@ export class InsightsService extends Repository {
         name: 'story',
         friendlyName: 'IgInsightsStoryInsightsAppQuery',
       },
-      documentId: '2164420446988319',
+      documentId: this.client.state.constants.INSIGHTS_DOCUMENT_IDS.story,
       variables: {
         query_params: {
           access_token: '',

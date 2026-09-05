@@ -68,6 +68,8 @@ export class State {
   @Enumerable(false)
   constants = Constants;
   supportedCapabilities = supportedCapabilities;
+  devices: string[] = devices;
+  builds: string[] = builds;
   language: string = 'en_US';
   timezoneOffset: string = String(new Date().getTimezoneOffset() * -60);
   radioType = 'wifi-none';
@@ -132,7 +134,7 @@ export class State {
   }
 
   public get webUserAgent() {
-    return `Mozilla/5.0 (Linux; Android ${this.devicePayload.android_release}; ${this.devicePayload.model} Build/${this.build}; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/70.0.3538.110 Mobile Safari/537.36 ${this.appUserAgent}`;
+    return `Mozilla/5.0 (Linux; Android ${this.devicePayload.android_release}; ${this.devicePayload.model} Build/${this.build}; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/${this.constants.WEB_USER_AGENT_CHROME_VERSION} Mobile Safari/537.36 ${this.appUserAgent}`;
   }
 
   public get devicePayload() {
@@ -263,7 +265,7 @@ export class State {
 
   public generateDevice(seed: string): void {
     const chance = new Chance(seed);
-    this.deviceString = chance.pickone(devices);
+    this.deviceString = chance.pickone(this.devices);
     const id = chance.string({
       pool: 'abcdef0123456789',
       length: 16,
@@ -272,7 +274,7 @@ export class State {
     this.uuid = chance.guid();
     this.phoneId = chance.guid();
     this.adid = chance.guid();
-    this.build = chance.pickone(builds);
+    this.build = chance.pickone(this.builds);
   }
 
   private generateTemporaryGuid(seed: string, lifetime: number) {

@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 
 export * from './core/client';
+export * from './core/constants';
 export * from './core/entity';
 export * from './core/feed';
 export * from './entities';

@@ -20,9 +20,4 @@ export interface PostingIgtvOptions {
     top: number;
     bottom: number;
   };
-
-  // default = 2000ms
-  transcodeDelay?: number;
-  // default = 20 ( * transcodeDelay = 40000ms = 40s)
-  maxTranscodeTries?: number;
 }

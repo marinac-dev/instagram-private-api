@@ -179,7 +179,10 @@ export class PublishService extends Repository {
           source_type: '4',
           video: { length: videoInfo.duration / 1000.0 },
         }),
-      PublishService.catchTranscodeError(videoInfo, options.transcodeDelay || 5000),
+      PublishService.catchTranscodeError(
+        videoInfo,
+        options.transcodeDelay || this.client.state.constants.TRANSCODE_DELAY_MS,
+      ),
     );
 
     const configureOptions: MediaConfigureTimelineVideoOptions = {
@@ -201,14 +204,15 @@ export class PublishService extends Repository {
       configureOptions.usertags = options.usertags;
     }
 
-    for (let i = 0; i < 6; i++) {
+    const { CONFIGURE_MAX_ATTEMPTS, CONFIGURE_RETRY_BASE_DELAY_MS } = this.client.state.constants;
+    for (let i = 0; i < CONFIGURE_MAX_ATTEMPTS; i++) {
       try {
         return await this.client.media.configureVideo(configureOptions);
       } catch (e) {
-        if (i >= 5 || e.response.statusCode >= 400) {
+        if (i >= CONFIGURE_MAX_ATTEMPTS - 1 || e.response.statusCode >= 400) {
           throw new IgConfigureVideoError(e.response, configureOptions);
         }
-        await sleep((i + 1) * 2 * 1000);
+        await sleep((i + 1) * CONFIGURE_RETRY_BASE_DELAY_MS);
       }
     }
   }
@@ -261,7 +265,10 @@ export class PublishService extends Repository {
               source_type: '4',
               video: { length: item.videoInfo.duration / 1000.0 },
             }),
-          PublishService.catchTranscodeError(item.videoInfo, item.transcodeDelay),
+          PublishService.catchTranscodeError(
+            item.videoInfo,
+            item.transcodeDelay || this.client.state.constants.TRANSCODE_DELAY_MS,
+          ),
         );
       }
     }
@@ -418,7 +425,6 @@ export class PublishService extends Repository {
       ...options.uploadOptions,
     });
     await this.client.upload.photo({ uploadId, file: options.coverFrame });
-    // await this.resolveTranscode(videoInfo, uploadId, options.transcodeDelay, options.maxTranscodeTries);
     const form: MediaConfigureToIgtvOptions = {
       upload_id: uploadId,
       title: options.title,
@@ -450,14 +456,15 @@ export class PublishService extends Repository {
       }
     }
     const finalInput = { ...form, ...options.configureOptions };
-    for (let i = 0; i < 6; i++) {
+    const { CONFIGURE_MAX_ATTEMPTS, CONFIGURE_RETRY_BASE_DELAY_MS } = this.client.state.constants;
+    for (let i = 0; i < CONFIGURE_MAX_ATTEMPTS; i++) {
       try {
         return await this.client.media.configureToIgtv(finalInput);
       } catch (e) {
-        if (i >= 6) {
+        if (i >= CONFIGURE_MAX_ATTEMPTS - 1) {
           throw new IgConfigureVideoError(e.response, finalInput);
         }
-        await sleep((i + 1) * 2 * 1000);
+        await sleep((i + 1) * CONFIGURE_RETRY_BASE_DELAY_MS);
       }
     }
   }
@@ -489,7 +496,7 @@ export class PublishService extends Repository {
 
     const segments =
       options.segments ||
-      (options.segmentDivider || SEGMENT_DIVIDERS.sectionSize(Math.pow(2, 24)))({
+      (options.segmentDivider || SEGMENT_DIVIDERS.sectionSize(this.client.state.constants.SEGMENTED_VIDEO_CHUNK_SIZE))({
         buffer: options.video,
         client: this.client,
       });
@@ -580,7 +587,10 @@ export class PublishService extends Repository {
           source_type: '3',
           video: { length: videoInfo.duration / 1000.0 },
         }),
-      PublishService.catchTranscodeError(videoInfo, options.transcodeDelay),
+      PublishService.catchTranscodeError(
+        videoInfo,
+        options.transcodeDelay || this.client.state.constants.TRANSCODE_DELAY_MS,
+      ),
     );
     return withIgResponseErrorHandler(
       () =>

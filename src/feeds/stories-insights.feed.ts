@@ -20,7 +20,7 @@ export class StoriesInsightsFeed extends Feed<
   async request(): Promise<StoriesInsightsFeedResponseRootObject> {
     const body = await this.client.ads.graphQL<StoriesInsightsFeedResponseRootObject>({
       surface: { friendlyName: 'IgInsightsStoryGridSurfaceQuery' },
-      documentId: '1995528257207653',
+      documentId: this.client.state.constants.INSIGHTS_DOCUMENT_IDS.storiesGrid,
       variables: {
         count: 15,
         cursor: this.nextCursor,
