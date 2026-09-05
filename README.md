@@ -49,6 +49,8 @@ Contact me in [telegram](https://t.me/bowzee) or [email](mailto:dilame.bowzee@gm
 
 # Install
 
+Requires Node.js >= 20.
+
 From npm
 
 ```

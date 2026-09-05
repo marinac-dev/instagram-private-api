@@ -1,15 +1,21 @@
 {
   "name": "instagram-private-api",
   "description": "Instagram private API wrapper for full access to instagram",
-  "version": "1.46.1",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=20.0.0"
   },
   "bugs": {
     "url": "https://github.com/dilame/instagram-private-api/issues",
