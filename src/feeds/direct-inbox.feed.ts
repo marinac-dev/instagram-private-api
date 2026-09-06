@@ -5,9 +5,9 @@ import { DirectThreadEntity } from '../entities';
 
 export class DirectInboxFeed extends Feed<DirectInboxFeedResponse, DirectInboxFeedResponseThreadsItem> {
   @Expose()
-  private cursor: string;
+  public cursor: string;
   @Expose()
-  private seqId: number;
+  public seqId: number;
 
   set state(body: DirectInboxFeedResponse) {
     this.moreAvailable = body.inbox.has_older;
